@@ -12,6 +12,7 @@ This project implements a cloud-native, distributed batch data pipeline using AW
 
 ## Architecture (High-Level)
 
+
 ```text
 S3 (Raw Data)
     ↓
@@ -27,7 +28,6 @@ DynamoDB (Serving Layer)
 ```
 
 **Flow:** Airflow → S3 → Glue → S3 → DynamoDB
-
 ---
 
 ## What This Pipeline Does
