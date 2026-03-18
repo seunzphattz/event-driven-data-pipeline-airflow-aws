@@ -28,6 +28,7 @@ DynamoDB (Serving Layer)
 ```
 
 **Flow:** Airflow → S3 → Glue → S3 → DynamoDB
+
 ---
 
 ## What This Pipeline Does
