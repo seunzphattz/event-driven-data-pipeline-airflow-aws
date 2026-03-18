@@ -2,6 +2,10 @@
 
 Production-style AWS data pipeline demonstrating orchestration, distributed ETL, and serving-layer design.
 
+## Tech Highlights
+
+Airflow • AWS Glue • S3 • DynamoDB • PySpark • Distributed ETL • Orchestration
+
 ---
 
 ## Overview
