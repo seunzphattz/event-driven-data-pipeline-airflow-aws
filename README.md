@@ -1,198 +1,140 @@
-This project implements a cloud-native, distributed batch data pipeline using AWS services and Apache Airflow for orchestration.
+# Event-Driven Data Pipeline on AWS (Airflow, S3, Glue, DynamoDB)
 
-It demonstrates a production-style architecture where:
+## Overview
 
-* **Apache Airflow** orchestrates workflow execution
-* **AWS Glue (Spark)** performs distributed ETL processing
-* **Amazon S3** acts as the data lake storage layer
-* **AWS Glue Python job** loads processed metrics
-* **Amazon DynamoDB** serves as the low-latency metrics store
+This project implements a **cloud-native, distributed batch data pipeline** using AWS services and Apache Airflow.
 
-The solution models a real-world batch analytics workflow and reflects best practices in distributed data engineering.
+It simulates a **production-grade analytics system** where data is ingested, processed at scale, and served for low-latency access.
 
 ---
 
-## Architecture Overview
+## Architecture (High-Level)
 
-```
-Raw Data (S3)
-        ↓
-Airflow DAG (Conditional Orchestration)
-        ↓
-Glue Spark Job (Distributed ETL)
-        ↓
-Processed Output (S3)
-        ↓
+S3 (Raw Data)
+   ↓
+Airflow (Orchestration Layer)
+   ↓
+AWS Glue Spark (Distributed ETL)
+   ↓
+S3 (Processed Data)
+   ↓
 Glue Python Loader
-        ↓
-DynamoDB (Metrics Table)
-```
+   ↓
+DynamoDB (Serving Layer)
 
 ---
 
-## Architectural Principles Applied
+## What This Pipeline Does
 
-### 1. Separation of Concerns
+- Orchestrates workflows using Apache Airflow
+- Processes large-scale data using AWS Glue (Spark)
+- Stores raw and processed data in Amazon S3
+- Loads computed metrics into DynamoDB for fast access
+- Implements conditional execution and dependency management
 
-* Orchestration logic isolated in Airflow
-* Distributed compute handled by Glue Spark
-* Storage managed via S3
-* Serving layer implemented with DynamoDB
+---
 
-### 2. Distributed Processing
+## Key Engineering Concepts Demonstrated
 
-The Spark job leverages Glue’s managed distributed runtime to:
+- Distributed data processing (Spark on Glue)
+- Workflow orchestration (Airflow DAGs)
+- Separation of compute, storage, and serving layers
+- Idempotent data loading (safe re-runs)
+- Conditional branching logic in pipelines
+- Cloud-native architecture design
 
-* Perform large-scale transformations
-* Compute aggregations and KPIs
-* Handle parallelized processing across executors
+---
 
-### 3. Conditional Workflow Execution
+## Data Flow
 
-The Airflow DAG:
-
-* Validates required input datasets
-* Branches execution using `BranchPythonOperator`
-* Enforces dependency ordering
-* Waits for Glue job completion before progressing
-
-### 4. Idempotent Data Loading
-
-The DynamoDB loader uses upsert logic to:
-
-* Prevent duplicate metric insertion
-* Support repeated pipeline runs safely
-
-### 5. Storage Lifecycle Awareness
-
-Processed files are archived post-execution to:
-
-* Avoid reprocessing
-* Maintain pipeline hygiene
-* Simulate production file lifecycle management
+1. Raw datasets are stored in S3
+2. Airflow DAG validates input availability
+3. Glue Spark job performs distributed ETL and computes metrics
+4. Processed data is written back to S3
+5. Glue Python job loads metrics into DynamoDB
+6. Processed files are archived to prevent reprocessing
 
 ---
 
 ## Project Structure
+dag_script/
+dag_glue_workflow.py
+glue_scripts/
+glue_pyspark.py
+glue_dynamo.py
+local_dev/
+local_docker_development.sh
+data/
+users_sample.csv
+songs_sample.csv
+stream_sample.csv
 
-```
-.
-├── dag_script/
-│   └── dag_glue_workflow.py
-│
-├── glue_scripts/
-│   ├── glue_pyspark.py
-│   └── glue_dynamo.py
-│
-├── local_dev/
-│   └── local_docker_development.sh
-│
-├── users_sample.csv
-├── songs_sample.csv
-├── stream_sample.csv
-└── README.md
-```
+
 
 ---
 
-## Component Breakdown
+## Architectural Principles
 
-### Airflow DAG (Orchestration Layer)
+### 1. Separation of Concerns
+- Airflow handles orchestration
+- Glue Spark handles distributed compute
+- S3 handles storage
+- DynamoDB handles serving
 
-Responsibilities:
+### 2. Distributed Processing
+- Spark performs large-scale transformations
+- Parallel execution across executors
 
-* Validate presence of required S3 input prefixes
-* Trigger Glue Spark ETL job
-* Poll for job completion
-* Trigger downstream loader job
-* Archive processed files
-* Skip execution if prerequisites are not met
+### 3. Conditional Workflow Execution
+- DAG validates input datasets
+- BranchPythonOperator controls execution paths
+- Ensures dependency ordering
 
-This reflects enterprise-grade orchestration patterns commonly deployed in MWAA environments.
+### 4. Idempotent Data Loading
+- DynamoDB uses upsert logic
+- Safe for repeated runs without duplication
 
----
-
-### Glue Spark ETL (Compute Layer)
-
-Responsibilities:
-
-* Read raw datasets from S3
-* Apply transformations and aggregations
-* Generate streaming KPIs and metrics
-* Write structured output back to S3
-
-Demonstrates:
-
-* Distributed execution
-* Aggregation logic
-* Spark-based transformation pipeline
-* Cloud-native ETL design
+### 5. Storage Lifecycle Management
+- Processed files are archived
+- Prevents duplicate processing
+- Maintains clean pipeline state
 
 ---
 
-### Glue Python Job (Serving Layer Loader)
+## Local Development
 
-Responsibilities:
-
-* Read processed output
-* Insert or update DynamoDB records
-* Maintain metric consistency
-
-This separates analytical compute from serving-layer updates — a common production pattern.
-
----
-
-## Data Engineering Patterns Demonstrated
-
-* Distributed batch processing
-* Cloud-native orchestration
-* Managed Spark infrastructure
-* Decoupled compute and storage
-* Branch-based DAG control flow
-* Explicit job dependency management
-* Programmatic Glue job triggering
-* S3 prefix validation strategy
-* Upsert-based DynamoDB writes
-
----
-
-## Local Development Strategy
-
-Pyspark is run locally using Docker to simulate orchestration behavior before deploying to AWS.
+PySpark jobs are tested locally using Docker before deployment to AWS.
 
 This allows:
-
-* Safe script testing
-* Workflow debugging
-* Faster development iteration
+- Faster iteration
+- Safer debugging
+- Environment consistency
 
 ---
 
 ## Production Considerations
 
-In an enterprise deployment, this pipeline would include:
-
-* Glue Job Bookmarking for incremental processing
-* Partitioned S3 layout for performance optimization
-* IAM least-privilege role policies
-* CloudWatch monitoring and alerting
-* Event-driven triggering via EventBridge
-* Infrastructure-as-Code provisioning (CloudFormation/Terraform)
-* Cost optimization via DPU tuning
-* CI/CD for DAG deployment
+- Incremental processing (Glue bookmarks)
+- Partitioned S3 storage
+- IAM least-privilege access
+- Monitoring via CloudWatch
+- Event-driven triggers (EventBridge)
+- CI/CD for deployment
+- Cost optimisation (DPU tuning)
 
 ---
 
 ## Why This Project Matters
 
-This repository reflects:
+This project demonstrates:
 
-* Practical understanding of distributed data systems
-* Real-world orchestration patterns
-* AWS-native data engineering practices
-* Architectural thinking beyond simple scripts
+- Real-world data pipeline design
+- Distributed data engineering practices
+- AWS-native architecture patterns
+- System-level thinking beyond simple ETL scripts
 
-It demonstrates how modern batch data pipelines are structured in production environments using managed cloud services.
+---
 
 ## Cost
-Less than $2
+
+Approximate cost: <$2 (development/testing scale)
